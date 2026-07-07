@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>cupid player ♡</title>
+ 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600&family=Baloo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
+ 
+<style>
+/* ===================== THEME (hồng / xanh) ===================== */
+.app[data-theme="pink"]{
+  --frame:#f8c8d8; --frame-line:#dd8ba8; --edge:#b46a86;
+  --panel:#fdeaf1; --panel2:#f7d5e0; --ink:#7a4a5e; --ink-soft:#a87c8c;
+  --accent:#ff7eb0; --label:#ff9ec4; --wall:#caa0af; --wall2:#b98a9c;
+  --floor:#a5768a; --player:#f6dfe8; --player-line:#c98aa4;
+}
+.app[data-theme="blue"]{
+  --frame:#bcd6f4; --frame-line:#82a8dd; --edge:#5f82b4;
+  --panel:#e9f1fd; --panel2:#d2e2f8; --ink:#42597a; --ink-soft:#7d94b4;
+  --accent:#6fa8ff; --label:#7fc4ff; --wall:#96abcc; --wall2:#8296bb;
+  --floor:#6f83a8; --player:#dfeaf8; --player-line:#8aa6c9;
+}
+ 
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Baloo 2',system-ui,sans-serif;min-height:100dvh;display:grid;place-items:center;padding:18px;
+  background:radial-gradient(120% 90% at 50% 0%, #3a2440 0%, transparent 55%),linear-gradient(180deg,#241633,#160d22);overflow-x:hidden}
+#bgstars{position:fixed;inset:0;z-index:0}
+ 
+/* ===================== CỬA SỔ KAWAII ===================== */
+.app{position:relative;z-index:2;width:min(400px,94vw);background:var(--frame);
+  border:4px solid var(--frame-line);border-radius:22px;
+  box-shadow:0 0 0 4px var(--edge),0 24px 60px rgba(0,0,0,.5);padding:10px;
+  animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.9) translateY(14px)}to{opacity:1;transform:none}}
+.bow{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-size:34px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.15))}
+.corner{position:absolute;width:14px;height:14px;z-index:3}
+.corner.tl{top:4px;left:4px}.corner.tr{top:4px;right:4px}.corner.bl{bottom:4px;left:4px}.corner.br{bottom:4px;right:4px}
+ 
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:2px 8px 8px;
+  border-bottom:3px dotted var(--frame-line);margin-bottom:8px}
+.app-title{font-family:'Pixelify Sans',monospace;font-size:1.05rem;color:var(--ink)}
+.win-btns{display:flex;gap:5px}
+.wbtn{width:22px;height:22px;border:2px solid var(--frame-line);background:var(--panel);border-radius:6px;
+  color:var(--ink);cursor:pointer;font-size:12px;display:grid;place-items:center;font-family:'Pixelify Sans',monospace}
+.wbtn:hover{background:var(--accent);color:#fff}.wbtn:active{transform:translateY(1px)}
+ 
+/* ===================== MÀN HÌNH (iframe YT ẩn phía sau cảnh) ===================== */
+.screen{position:relative;border:3px solid var(--frame-line);border-radius:14px;overflow:hidden;background:var(--wall);line-height:0}
+/* Trình phát YouTube: PHỦ KÍN màn hình nhưng nằm SAU cảnh (bị cảnh che) => vẫn on-screen nên phát nhạc ổn định */
+#yt-player{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:0}
+.scene{position:relative;z-index:1;width:100%;height:auto;display:block}
+ 
+.vinyl{transform-box:view-box;transform-origin:150px 176px;animation:spin 4s linear infinite;animation-play-state:paused}
+.app.playing .vinyl{animation-play-state:running}
+@keyframes spin{from{transform:scaleY(.55) rotate(0deg)}to{transform:scaleY(.55) rotate(360deg)}}
+ 
+/* cần ghim hạ xuống đĩa khi phát */
+.tonearm{transform-box:view-box;transform-origin:250px 150px;transform:rotate(-20deg);
+  transition:transform .9s cubic-bezier(.34,1.3,.5,1)}
+.app.playing .tonearm{transform:rotate(0deg)}
+ 
+.note{transform-box:view-box;opacity:0}
+.app.playing .note{animation:floatNote 3s ease-in-out infinite}
+.app.playing .note.n2{animation-delay:1s}.app.playing .note.n3{animation-delay:2s}
+@keyframes floatNote{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(-26px) translateX(6px)}}
+ 
+/* ===================== NOW PLAYING ===================== */
+.nowbar{display:flex;gap:10px;align-items:center;margin:10px 4px 4px}
+.np-art{width:46px;height:46px;flex:0 0 46px;border-radius:8px;border:2px solid var(--frame-line);
+  background:var(--panel2) center/cover no-repeat;box-shadow:0 2px 0 var(--edge)}
+.np-text{min-width:0;flex:1}
+.np-label{font-family:'Pixelify Sans',monospace;font-size:.72rem;color:var(--accent)}
+.np-title-wrap{overflow:hidden;white-space:nowrap}
+.np-title{display:inline-block;font-weight:700;font-size:1.05rem;color:var(--ink)}
+.np-title.scroll{animation:marquee 10s linear infinite}
+@keyframes marquee{0%,8%{transform:translateX(0)}92%,100%{transform:translateX(calc(-100% + 210px))}}
+.np-artist{font-size:.82rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ 
+/* ===================== TIẾN TRÌNH ===================== */
+.progress{margin:8px 6px 2px}
+.bar{position:relative;height:8px;border-radius:99px;background:var(--panel2);border:2px solid var(--frame-line);cursor:pointer}
+.fill{position:absolute;top:0;left:0;height:100%;width:0%;border-radius:99px;background:var(--accent)}
+.star{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);font-size:16px;filter:drop-shadow(0 0 4px rgba(255,255,255,.6));transition:left .25s linear;pointer-events:none}
+.time{display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-soft);margin-top:5px;font-variant-numeric:tabular-nums}
+ 
+/* ===================== ĐIỀU KHIỂN ===================== */
+.controls{display:flex;align-items:center;justify-content:center;gap:12px;margin:6px 0 2px}
+.pbtn{border:3px solid var(--frame-line);background:var(--panel);color:var(--ink);width:44px;height:44px;
+  border-radius:12px;cursor:pointer;display:grid;place-items:center;box-shadow:0 3px 0 var(--edge);transition:transform .1s}
+.pbtn:hover{background:var(--panel2)}.pbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+.pbtn svg{width:20px;height:20px;fill:currentColor}
+.pbtn.play{width:56px;height:56px;background:var(--accent);color:#fff;border-color:#fff6;border-radius:16px}
+.pbtn.play svg{width:26px;height:26px}
+.pbtn.small{width:38px;height:38px;color:var(--ink-soft)}.pbtn.small svg{width:17px;height:17px}
+.pbtn.on{background:var(--accent);color:#fff}
+ 
+.hint{font-size:.72rem;color:var(--ink);text-align:center;margin:10px 4px 2px;line-height:1.55;opacity:.85}
+.hint b{color:var(--accent)}
+.warn{display:none;margin:8px 4px 0;padding:8px 10px;border-radius:10px;font-size:.74rem;line-height:1.5;
+  background:#ffe0e0;color:#a02525;border:2px solid #ffb3b3;text-align:center}
+.warn.show{display:block}
+ 
+/* ===================== CÀI ĐẶT ===================== */
+.sheet{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:18px;background:rgba(20,10,26,.7)}
+.sheet.open{display:grid}
+.card{width:min(400px,94vw);background:var(--frame);border:4px solid var(--frame-line);box-shadow:0 0 0 4px var(--edge);border-radius:20px;padding:8px}
+.card-in{background:var(--panel);border-radius:14px;padding:18px}
+.card h2{font-family:'Pixelify Sans',monospace;font-size:1.2rem;color:var(--ink)}
+.card .sub{font-size:.8rem;color:var(--ink-soft);margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.78rem;color:var(--ink);margin-bottom:5px;font-weight:600}
+.field input{width:100%;padding:11px 12px;border-radius:10px;color:var(--ink);background:#fff;
+  border:2px solid var(--frame-line);font-family:'Baloo 2';font-size:.9rem;outline:none}
+.field input:focus{border-color:var(--accent)}
+.themes{display:flex;gap:8px;margin-bottom:14px}
+.swatch{flex:1;padding:9px;border-radius:10px;border:2px solid var(--frame-line);cursor:pointer;font-weight:600;font-size:.85rem;color:var(--ink);text-align:center}
+.swatch.pk{background:#ffd9e6}.swatch.bl{background:#d6e6ff}
+.swatch.sel{outline:3px solid var(--accent);outline-offset:1px}
+.savebtn{width:100%;padding:12px;border:3px solid var(--frame-line);border-radius:12px;cursor:pointer;
+  font-family:'Baloo 2';font-weight:700;font-size:.95rem;color:#fff;background:var(--accent);box-shadow:0 3px 0 var(--edge)}
+.savebtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+.closex{float:right;color:var(--ink);cursor:pointer;font-size:1.3rem}
+ 
+.floater{position:fixed;z-index:30;pointer-events:none;font-size:20px;animation:fly 2.2s ease-out forwards}
+@keyframes fly{0%{transform:translateY(0) scale(.5);opacity:0}15%{opacity:1}100%{transform:translateY(-150px) scale(1.2) rotate(18deg);opacity:0}}
+ 
+@media (prefers-reduced-motion:reduce){.vinyl,.note,.floater{animation:none!important}.tonearm{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="bgstars"></canvas>
+ 
+<!-- ===================== CỬA SỔ ===================== -->
+<div class="app" id="app" data-theme="pink">
+  <div class="bow">🎀</div>
+  <svg class="corner tl" viewBox="0 0 12 12"><path d="M6 11 1 6C-.2 3.4 1 2 3 2c1.2 0 2.2.8 3 2 .8-1.2 1.8-2 3-2 2 0 3.2 1.4 2 4z" fill="var(--accent)"/></svg>
+  <svg class="corner tr" viewBox="0 0 12 12"><path d="M6 11 1 6C-.2 3.4 1 2 3 2c1.2 0 2.2.8 3 2 .8-1.2 1.8-2 3-2 2 0 3.2 1.4 2 4z" fill="var(--accent)"/></svg>
+  <svg class="corner bl" viewBox="0 0 12 12"><path d="M6 11 1 6C-.2 3.4 1 2 3 2c1.2 0 2.2.8 3 2 .8-1.2 1.8-2 3-2 2 0 3.2 1.4 2 4z" fill="var(--accent)"/></svg>
+  <svg class="corner br" viewBox="0 0 12 12"><path d="M6 11 1 6C-.2 3.4 1 2 3 2c1.2 0 2.2.8 3 2 .8-1.2 1.8-2 3-2 2 0 3.2 1.4 2 4z" fill="var(--accent)"/></svg>
+ 
+  <div class="titlebar">
+    <span class="app-title">cupid player</span>
+    <div class="win-btns">
+      <button class="wbtn" id="gear" title="Cài đặt">⚙</button>
+      <button class="wbtn" title="Thu nhỏ">–</button>
+      <button class="wbtn" title="Phóng to">▢</button>
+      <button class="wbtn" title="Đóng">✕</button>
+    </div>
+  </div>
+ 
+  <!-- ===== MÀN HÌNH ===== -->
+  <div class="screen">
+    <div id="yt-player"></div>
+    <svg class="scene" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2456"/><stop offset="1" stop-color="#5a4c86"/></linearGradient>
+        <linearGradient id="wallg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--wall)"/><stop offset="1" stop-color="var(--wall2)"/></linearGradient>
+      </defs>
+ 
+      <!-- tường + sàn -->
+      <rect x="0" y="0" width="340" height="250" fill="url(#wallg)"/>
+      <rect x="0" y="200" width="340" height="50" fill="var(--floor)"/>
+      <line x1="0" y1="218" x2="340" y2="218" stroke="#0002" stroke-width="2"/>
+      <line x1="0" y1="236" x2="340" y2="236" stroke="#0002" stroke-width="2"/>
+ 
+      <!-- cửa sổ đêm -->
+      <g>
+        <rect x="24" y="14" width="132" height="104" rx="3" fill="var(--frame)"/>
+        <rect x="31" y="21" width="118" height="90" fill="url(#sky)"/>
+        <g fill="#fff"><rect x="48" y="36" width="3" height="3"/><rect x="80" y="30" width="2" height="2"/><rect x="112" y="44" width="3" height="3"/><rect x="132" y="34" width="2" height="2"/><rect x="60" y="60" width="2" height="2"/><rect x="96" y="82" width="3" height="3"/><rect x="42" y="84" width="2" height="2"/></g>
+        <circle cx="128" cy="42" r="12" fill="#ffe9a8"/><circle cx="132" cy="38" r="11" fill="url(#sky)"/>
+        <rect x="86" y="21" width="6" height="90" fill="var(--frame)"/>
+        <rect x="31" y="62" width="118" height="6" fill="var(--frame)"/>
+        <rect x="24" y="14" width="132" height="104" rx="3" fill="none" stroke="var(--frame-line)" stroke-width="4"/>
+        <rect x="18" y="116" width="144" height="7" rx="2" fill="var(--frame-line)"/>
+      </g>
+ 
+      <!-- ===== BÓ HOA (giữ nguyên) ===== -->
+      <g transform="translate(292,118)">
+        <g stroke="#4f9e5f" stroke-width="3" fill="none" stroke-linecap="round">
+          <path d="M-14 46 C-18 22 -22 8 -24 -6"/><path d="M-2 46 C-2 20 -4 6 -6 -14"/>
+          <path d="M8 46 C10 22 12 10 14 -4"/><path d="M18 46 C24 24 30 12 34 -2"/>
+        </g>
+        <ellipse cx="-12" cy="20" rx="8" ry="3.5" fill="#57ab63" transform="rotate(-30 -12 20)"/>
+        <ellipse cx="6" cy="26" rx="8" ry="3.5" fill="#4f9e5f" transform="rotate(28 6 26)"/>
+        <ellipse cx="22" cy="18" rx="7" ry="3" fill="#57ab63" transform="rotate(35 22 18)"/>
+        <!-- cúc trắng -->
+        <g transform="translate(-24,-8)">
+          <g fill="#fff"><ellipse cx="0" cy="-7" rx="3" ry="5"/><ellipse cx="7" cy="0" rx="5" ry="3"/><ellipse cx="0" cy="7" rx="3" ry="5"/><ellipse cx="-7" cy="0" rx="5" ry="3"/>
+            <ellipse cx="5" cy="-5" rx="3.4" ry="4" transform="rotate(45 5 -5)"/><ellipse cx="5" cy="5" rx="3.4" ry="4" transform="rotate(-45 5 5)"/>
+            <ellipse cx="-5" cy="5" rx="3.4" ry="4" transform="rotate(45 -5 5)"/><ellipse cx="-5" cy="-5" rx="3.4" ry="4" transform="rotate(-45 -5 -5)"/></g>
+          <circle cx="0" cy="0" r="3.6" fill="#f4c026"/>
+        </g>
+        <!-- tulip hồng -->
+        <g transform="translate(-6,-16)" fill="#ff6fa5">
+          <path d="M0 6 C-9 4 -9 -8 -8 -12 C-6 -8 -4 -8 0 -10 C4 -8 6 -8 8 -12 C9 -8 9 4 0 6z"/>
+          <path d="M0 6 C-3 2 -3 -8 0 -12 C3 -8 3 2 0 6z" fill="#e85891"/>
+        </g>
+        <!-- hoa tròn tím -->
+        <g transform="translate(14,-4)">
+          <g fill="#b688e6"><circle cx="0" cy="-6" r="3.2"/><circle cx="6" cy="-2" r="3.2"/><circle cx="4" cy="5" r="3.2"/><circle cx="-4" cy="5" r="3.2"/><circle cx="-6" cy="-2" r="3.2"/></g>
+          <circle cx="0" cy="0" r="3" fill="#ffd94d"/>
+        </g>
+        <!-- hoa cam nhỏ -->
+        <g transform="translate(34,-2)">
+          <g fill="#ff9d4d"><circle cx="0" cy="-4" r="2.6"/><circle cx="4" cy="1" r="2.6"/><circle cx="-4" cy="1" r="2.6"/></g>
+          <circle cx="0" cy="0" r="2.2" fill="#c9522a"/>
+        </g>
+        <circle cx="26" cy="-16" r="3" fill="#ff9ec4"/>
+        <path d="M-18 46 L22 46 L17 74 C5 82 -7 80 -13 74 Z" fill="#d7b98a"/>
+        <path d="M-18 46 L22 46 L20 54 L-16 54 Z" fill="#c9a874"/>
+        <rect x="-18" y="44" width="40" height="5" rx="2" fill="#e6cfa3"/>
+        <ellipse cx="4" cy="66" rx="10" ry="5" fill="#00000010"/>
+      </g>
+ 
+      <!-- nốt nhạc -->
+      <text class="note n1" x="205" y="150" font-size="16" fill="var(--accent)">♪</text>
+      <text class="note n2" x="226" y="140" font-size="13" fill="#fff">♫</text>
+      <text class="note n3" x="196" y="132" font-size="12" fill="#ffd94d">♪</text>
+ 
+      <!-- ===== MÁY HÁT PINK (cũ) ===== -->
+      <path d="M72 152 L150 96 L236 130 L166 182 Z" fill="#ffffff22" stroke="var(--player-line)" stroke-width="2"/>
+      <rect x="66" y="150" width="208" height="80" rx="12" fill="var(--player)" stroke="var(--player-line)" stroke-width="3"/>
+      <rect x="66" y="206" width="208" height="24" fill="#00000010"/>
+      <ellipse cx="150" cy="176" rx="62" ry="35" fill="#241826"/>
+      <g class="vinyl">
+        <circle cx="150" cy="176" r="57" fill="#1b1220"/>
+        <circle cx="150" cy="176" r="57" fill="none" stroke="#000" stroke-width="1" opacity=".5"/>
+        <circle cx="150" cy="176" r="46" fill="none" stroke="#33222f" stroke-width="1.5"/>
+        <circle cx="150" cy="176" r="35" fill="none" stroke="#33222f" stroke-width="1.5"/>
+        <circle cx="150" cy="176" r="24" fill="none" stroke="#33222f" stroke-width="1.5"/>
+        <line x1="150" y1="176" x2="150" y2="120" stroke="#ffffff18" stroke-width="5"/>
+        <circle cx="150" cy="176" r="16" fill="var(--label)"/>
+        <circle cx="150" cy="176" r="16" fill="none" stroke="#fff" stroke-width="1.5" opacity=".4"/>
+        <circle cx="150" cy="164" r="2.4" fill="#1b1220"/>
+        <circle cx="150" cy="176" r="2.4" fill="#2a1a24"/>
+      </g>
+      <!-- cần ghim (hạ khi phát) -->
+      <g class="tonearm">
+        <circle cx="250" cy="150" r="6" fill="var(--player)" stroke="var(--player-line)" stroke-width="2.5"/>
+        <line x1="250" y1="150" x2="176" y2="172" stroke="var(--player-line)" stroke-width="3.5" stroke-linecap="round"/>
+        <rect x="170" y="168" width="11" height="9" rx="2" fill="var(--player)" stroke="var(--player-line)" stroke-width="2"/>
+      </g>
+      <g fill="var(--label)"><rect x="92" y="212" width="12" height="8" rx="2"/><rect x="110" y="212" width="12" height="8" rx="2"/><rect x="128" y="212" width="12" height="8" rx="2"/></g>
+      <rect x="180" y="210" width="66" height="12" rx="3" fill="#00000018"/>
+    </svg>
+  </div>
+ 
+  <!-- ===== NOW PLAYING ===== -->
+  <div class="nowbar">
+    <div class="np-art" id="npArt"></div>
+    <div class="np-text">
+      <div class="np-label">now playing…</div>
+      <div class="np-title-wrap"><span class="np-title" id="npTitle">Nhấn ▶ để phát</span></div>
+      <div class="np-artist" id="npArtist">YouTube</div>
+    </div>
+  </div>
+ 
+  <div class="progress">
+    <div class="bar" id="bar"><div class="fill" id="fill"></div><div class="star" id="star">⭐</div></div>
+    <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+  </div>
+ 
+  <div class="controls">
+    <button class="pbtn small" id="repeatBtn" title="Lặp lại bài này"><svg viewBox="0 0 24 24"><path d="M7 7h9V4l5 5-5 5v-3H9v3H7V7zm10 10H8v3l-5-5 5-5v3h8v2z"/></svg></button>
+    <button class="pbtn" id="prevBtn" title="Bài trước"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6V6zm3.5 6L18 6v12l-8.5-6z"/></svg></button>
+    <button class="pbtn play" id="playBtn" title="Phát / Dừng"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="pbtn" id="nextBtn" title="Bài kế tiếp"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2V6zM6 6l8.5 6L6 18V6z"/></svg></button>
+    <button class="pbtn small" id="loveBtn" title="Thả tim"><svg viewBox="0 0 24 24"><path d="M12 21s-6.7-4.4-9.3-8.3C.8 9.6 2.4 6 5.6 6c1.9 0 3.2 1.1 3.9 2.2L12 11l2.5-2.8C15.2 7.1 16.5 6 18.4 6c3.2 0 4.8 3.6 2.9 6.7C18.7 16.6 12 21 12 21z"/></svg></button>
+  </div>
+ 
+  <p class="hint">Dán link <b>video</b> hoặc <b>playlist YouTube</b> ở nút ⚙. Nhạc phát trọn bài, <b>không cần đăng nhập</b>.</p>
+  <div class="warn" id="warn">⚠️ Bạn đang mở file trực tiếp (file://). YouTube sẽ không phát. Trong VS Code hãy bấm <b>Go Live</b> để mở qua http://localhost.</div>
+</div>
+ 
+<!-- ===================== CÀI ĐẶT ===================== -->
+<div class="sheet" id="sheet">
+  <div class="card"><div class="card-in">
+    <span class="closex" id="closeSheet">&times;</span>
+    <h2>cài đặt</h2>
+    <p class="sub">Dán link YouTube (video hoặc playlist) & chọn màu.</p>
+    <div class="field"><label>Link YouTube</label>
+      <input id="inpUrl" placeholder="https://youtu.be/... hoặc .../playlist?list=..." /></div>
+    <label style="font-size:.78rem;color:var(--ink);font-weight:600;display:block;margin-bottom:5px">Màu phòng</label>
+    <div class="themes">
+      <div class="swatch pk sel" data-t="pink" id="swPink">🌸 hồng</div>
+      <div class="swatch bl" data-t="blue" id="swBlue">💙 xanh</div>
+    </div>
+    <button class="savebtn" id="saveBtn">Lưu &amp; phát ♡</button>
+  </div></div>
+</div>
+ 
+<script>
+/* =====================================================================
+   CẤU HÌNH — đổi ở đây hoặc bấm nút ⚙
+   ===================================================================== */
+const CONFIG = {
+  youtubeUrl: 'https://www.youtube.com/watch?v=j_sG_Juncn8', // Lovers Rock - TV Girl
+  theme: 'pink'
+};
+ 
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const fmt = s => { s=Math.max(0,Math.floor(s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+ 
+function parseYT(url){
+  url = url || '';
+  const v = url.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+  const l = url.match(/[?&]list=([A-Za-z0-9_-]+)/);
+  return { videoId: v?v[1]:null, listId: l?l[1]:null };
+}
+ 
+let player=null, repeatOne=false, poll=null, current=parseYT(CONFIG.youtubeUrl);
+ 
+/* ---------- cảnh báo nếu mở bằng file:// ---------- */
+if(location.protocol === 'file:') $('#warn').classList.add('show');
+ 
+/* ---------- sao nền ---------- */
+(function(){const c=$('#bgstars'),x=c.getContext('2d');let w,h,p=[];
+  function sz(){w=c.width=innerWidth;h=c.height=innerHeight;
+    p=Array.from({length:Math.min(120,(w*h/11000)|0)},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.3+.2,a:Math.random(),s:Math.random()*.02+.004}));}
+  sz();addEventListener('resize',sz);
+  (function loop(){x.clearRect(0,0,w,h);for(const s of p){s.a+=s.s;if(s.a>1||s.a<0)s.s*=-1;
+    x.globalAlpha=Math.abs(s.a);x.fillStyle='#ffd9ec';x.beginPath();x.arc(s.x,s.y,s.r,0,7);x.fill();}
+    requestAnimationFrame(loop);})();})();
+ 
+/* ---------- YouTube IFrame API ---------- */
+function boot(){ const t=document.createElement('script'); t.src='https://www.youtube.com/iframe_api'; document.head.appendChild(t); }
+window.onYouTubeIframeAPIReady = () => {
+  const pv = { controls:0, disablekb:1, modestbranding:1, rel:0, playsinline:1, fs:0 };
+  if(location.protocol.startsWith('http')) pv.origin = location.origin; // giúp API ổn định trên localhost
+  const opts = { width:'100%', height:'100%', playerVars:pv,
+    events:{ onReady:()=>{}, onStateChange:onState, onError:onErr } };
+  if(current.listId){ opts.playerVars.listType='playlist'; opts.playerVars.list=current.listId; }
+  else { opts.videoId = current.videoId || 'j_sG_Juncn8'; }
+  player = new YT.Player('yt-player', opts);
+};
+ 
+function onState(e){
+  const S = YT.PlayerState;
+  if(e.data===S.PLAYING){ setPlaying(true); startPoll(); updateMeta(); }
+  else if(e.data===S.PAUSED){ setPlaying(false); }
+  else if(e.data===S.ENDED){ setPlaying(false);
+    if(repeatOne){ player.seekTo(0,true); player.playVideo(); } }
+  else if(e.data===S.CUED){ updateMeta(); }
+}
+function onErr(){ setTitle('Video này không cho phát/nhúng'); $('#npArtist').textContent='thử link khác nhé'; }
+ 
+function setPlaying(on){
+  app.classList.toggle('playing', on);
+  $('#playIcon').innerHTML = on ? '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+}
+function updateMeta(){
+  try{ const d=player.getVideoData(); if(d&&d.title){ setTitle(d.title);
+    $('#npArtist').textContent = d.author ? d.author.replace(' - Topic','') : 'YouTube';
+    if(d.video_id) $('#npArt').style.backgroundImage=`url("https://i.ytimg.com/vi/${d.video_id}/hqdefault.jpg")`;
+  }}catch(e){}
+}
+function setTitle(t){ const el=$('#npTitle'); el.textContent=t; el.classList.remove('scroll');
+  requestAnimationFrame(()=>{ if(el.scrollWidth>el.parentElement.clientWidth+4) el.classList.add('scroll'); }); }
+ 
+function startPoll(){ clearInterval(poll); poll=setInterval(()=>{
+  if(!player||!player.getDuration) return;
+  const t=player.getCurrentTime()||0, D=player.getDuration()||0;
+  const pct = D? Math.min(100,t/D*100):0;
+  $('#fill').style.width=pct+'%'; $('#star').style.left=pct+'%';
+  $('#cur').textContent=fmt(t); $('#dur').textContent=fmt(D);
+},400); }
+ 
+/* ---------- điều khiển ---------- */
+$('#playBtn').onclick=()=>{ if(!player)return;
+  const st=player.getPlayerState();
+  if(st===YT.PlayerState.PLAYING) player.pauseVideo(); else player.playVideo(); };
+$('#prevBtn').onclick=()=>{ if(!player)return;
+  if(current.listId) player.previousVideo(); else { player.seekTo(0,true); player.playVideo(); } };
+$('#nextBtn').onclick=()=>{ if(!player)return;
+  if(current.listId) player.nextVideo(); else { player.seekTo(0,true); } };
+$('#repeatBtn').onclick=()=>{ repeatOne=!repeatOne; $('#repeatBtn').classList.toggle('on',repeatOne); };
+$('#bar').onclick=e=>{ if(!player||!player.getDuration)return;
+  const r=e.currentTarget.getBoundingClientRect(), D=player.getDuration()||0;
+  player.seekTo((e.clientX-r.left)/r.width*D, true); };
+ 
+$('#loveBtn').onclick=e=>{ const em=['💗','💖','💕','🌸','✨'];
+  for(let i=0;i<6;i++){ const f=document.createElement('div'); f.className='floater';
+    f.textContent=em[(Math.random()*em.length)|0];
+    f.style.left=(e.clientX+(Math.random()*50-25))+'px'; f.style.top=(e.clientY-8)+'px';
+    f.style.animationDelay=(Math.random()*.25)+'s'; document.body.appendChild(f);
+    setTimeout(()=>f.remove(),2400);} };
+ 
+/* ---------- cài đặt ---------- */
+let pendingTheme=CONFIG.theme;
+$('#gear').onclick=()=>{ $('#inpUrl').value=CONFIG.youtubeUrl; pendingTheme=CONFIG.theme; markTheme(); $('#sheet').classList.add('open'); };
+$('#closeSheet').onclick=()=>$('#sheet').classList.remove('open');
+$('#sheet').onclick=e=>{ if(e.target===$('#sheet'))$('#sheet').classList.remove('open'); };
+$('#swPink').onclick=()=>{pendingTheme='pink';markTheme();};
+$('#swBlue').onclick=()=>{pendingTheme='blue';markTheme();};
+function markTheme(){ $('#swPink').classList.toggle('sel',pendingTheme==='pink'); $('#swBlue').classList.toggle('sel',pendingTheme==='blue'); }
+ 
+$('#saveBtn').onclick=()=>{
+  CONFIG.youtubeUrl=$('#inpUrl').value.trim()||CONFIG.youtubeUrl;
+  CONFIG.theme=pendingTheme; app.dataset.theme=CONFIG.theme;
+  current=parseYT(CONFIG.youtubeUrl);
+  $('#sheet').classList.remove('open');
+  if(!player) return;
+  if(current.listId){ player.loadPlaylist({ list:current.listId, listType:'playlist' }); }
+  else if(current.videoId){ player.loadVideoById(current.videoId); }
+};
+ 
+/* ---------- khởi động ---------- */
+app.dataset.theme=CONFIG.theme;
+boot();
+</script>
+</body>
+</html>
