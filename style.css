@@ -5,7 +5,7 @@
     font-family: Helvetica, Arial, sans-serif;
 }
 
-/*  Thiết lập Body */
+/* 2. Thiết lập Body: NỀN TRẮNG như ảnh mẫu */
 body {
     background-color: #ffffff;
     color: #1c1e21;
@@ -176,7 +176,7 @@ button[class="5"]:hover { background-color: #f0f7ff; }
 .so8{
     color: #1877f2;
 }
-
+/* ==== FOOTER ==== */
 footer {
     background-color: #ffffff;
     padding: 20px;
