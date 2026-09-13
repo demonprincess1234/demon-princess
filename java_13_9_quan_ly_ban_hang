@@ -1,0 +1,427 @@
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+class Account {
+    private String username;
+    private String password;
+    private int roleId; 
+
+    public Account() {}
+
+    public Account(String username, String password, int roleId) {
+        this.username = username;
+        this.password = password;
+        this.roleId = roleId;
+    }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public int getRoleId() { return roleId; }
+    public void setRoleId(int roleId) { this.roleId = roleId; }
+}
+
+class Category {
+    private int id;
+    private String name;
+
+    public Category(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+}
+
+class Product {
+    private int id;
+    private String name;
+    private double price;
+    private double discountPrice;
+    private boolean isDiscount;
+    private int categoryId;
+
+    public Product(int id, String name, double price, double discountPrice, boolean isDiscount, int categoryId) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.discountPrice = discountPrice;
+        this.isDiscount = isDiscount;
+        this.categoryId = categoryId;
+    }
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public double getPrice() { return price; }
+    public void setPrice(double price) { this.price = price; }
+    public double getDiscountPrice() { return discountPrice; }
+    public void setDiscountPrice(double discountPrice) { this.discountPrice = discountPrice; }
+    public boolean isDiscount() { return isDiscount; }
+    public void setDiscount(boolean discount) { isDiscount = discount; }
+    public int getCategoryId() { return categoryId; }
+    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+}
+
+class Order {
+    private int orderId;
+    private String buyerUsername;
+    private int productId;
+    private int quantity;
+    private double unitPrice;
+    private double totalPrice;
+    private String orderDate;
+
+    public Order(int orderId, String buyerUsername, int productId, int quantity, double unitPrice, double totalPrice) {
+        this.orderId = orderId;
+        this.buyerUsername = buyerUsername;
+        this.productId = productId;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.totalPrice = totalPrice;
+        
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        this.orderDate = now.format(formatter);
+    }
+
+    public int getOrderId() { return orderId; }
+    public String getBuyerUsername() { return buyerUsername; }
+    public int getProductId() { return productId; }
+    public int getQuantity() { return quantity; }
+    public double getUnitPrice() { return unitPrice; }
+    public double getTotalPrice() { return totalPrice; }
+    public String getOrderDate() { return orderDate; }
+}
+
+
+public class bai_12_9_anh_hieu {
+
+    private static ArrayList<Account> accounts = new ArrayList<>();
+    private static ArrayList<Category> categories = new ArrayList<>();
+    private static ArrayList<Product> products = new ArrayList<>();
+    private static ArrayList<Order> orders = new ArrayList<>();
+    
+    private static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        initMockData();
+        
+        while (true) { 
+            System.out.println("========================================");
+            System.out.println("   HỆ THỐNG QUẢN LÝ CỬA HÀNG HOA QUẢ");
+            System.out.println("========================================");
+            System.out.println("1. Đăng nhập");
+            System.out.println("0. Thoát chương trình");
+            System.out.println("----------------------------------------");
+            System.out.print("Lựa chọn của bạn: ");
+            
+            String choice = scanner.nextLine();
+            
+            if (choice.equals("0")) {
+                System.out.println("Tạm biệt!");
+                break;
+            } else if (choice.equals("1")) {
+                handleLogin();
+            } else {
+                System.out.println("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+
+    private static void initMockData() {
+        accounts.add(new Account("admin", "123", 1));
+        accounts.add(new Account("khachhang1", "123", 2));
+        accounts.add(new Account("khachhang2", "123", 2));
+
+        categories.add(new Category(1, "Hoa quả nội địa"));
+        categories.add(new Category(2, "Hoa quả nhập khẩu"));
+
+        products.add(new Product(1, "Cam sành Hàm Yên", 40000, 35000, true, 1));
+        products.add(new Product(2, "Xoài cát Hòa Lộc", 70000, 0, false, 1));
+        products.add(new Product(3, "Táo Envy New Zealand", 150000, 125000, true, 2));
+        products.add(new Product(4, "Nho đen không hạt Mỹ", 200000, 0, false, 2));
+    }
+
+    private static void handleLogin() {
+        System.out.print("Nhập username: ");
+        String username = scanner.nextLine();
+        System.out.print("Nhập password: ");
+        String password = scanner.nextLine();
+
+        Account loggedInUser = null;
+   
+        for (Account acc : accounts) {
+            if (acc.getUsername().equals(username) && acc.getPassword().equals(password)) {
+                loggedInUser = acc;
+                break;
+            }
+        }
+
+        if (loggedInUser == null) {
+            System.out.println("Sai tài khoản hoặc mật khẩu!");
+        } else {
+            if (loggedInUser.getRoleId() == 1) {
+                adminMenu(loggedInUser);
+            } else if (loggedInUser.getRoleId() == 2) {
+                customerMenu(loggedInUser);
+            }
+        }
+    }
+ 
+    // ==========================================
+    // MENU CHỦ CỬA HÀNG
+    // ==========================================
+    private static void adminMenu(Account admin) {
+        while (true) {
+            System.out.println("\n================ MENU CHỦ CỬA HÀNG ================");
+            System.out.println("Xin chào: " + admin.getUsername() + " Role: Chủ cửa hàng" + admin.getRoleId());
+            System.out.println("---------------------------------------------------");
+            System.out.println("1. Xem danh sách toàn bộ hoa quả");
+            System.out.println("2. Thêm mới hoa quả");
+            System.out.println("3. Cập nhật thông tin hoa quả");
+            System.out.println("4. Xóa hoa quả");
+            System.out.println("5. Xem danh sách tất cả các đơn hàng");
+            System.out.println("0. Đăng xuất");
+            System.out.print("Lựa chọn của bạn: ");
+            
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    displayAllProducts();
+                    break;
+                case "2":
+                    addProduct();
+                    break;
+                case "3":
+                    updateProduct();
+                    break;
+                case "4":
+                    
+                    break;
+                case "5":
+                    displayAllOrders();
+                    break;
+                case "0":
+                    return; // Đăng xuất, quay lại main
+                default:
+                    System.out.println("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+
+    private static void displayAllProducts() {
+        System.out.println("\n--- DANH SÁCH HOA QUẢ ---");
+        for (Product p : products) {
+           System.out.print("ID: " + p.getId());
+           System.out.print("Ten: " + p.getName());
+           System.out.print("Danh muc: " + p.getCategoryId());;
+           System.out.print("Gia goc: " + p.getPrice());
+           System.out.print("Giam gia: " + p.isDiscount());
+           System.out.print("Gia KM: " + p.getDiscountPrice());
+        }
+    }
+
+    private static void addProduct() {
+        try {
+            System.out.print("Nhập tên hoa quả: ");
+            String name = scanner.nextLine();
+            System.out.print("Giá gốc: ");
+            double price = Double.parseDouble(scanner.nextLine());
+            System.out.print("Giá khuyến mãi: ");
+            double discountPrice = Double.parseDouble(scanner.nextLine());
+            System.out.print("Có áp dụng giảm giá không? (true/false): ");
+            boolean isDiscount = Boolean.parseBoolean(scanner.nextLine());
+            System.out.print("Nhập ID danh mục (1: Nội địa, 2: Nhập khẩu): ");
+            int categoryId = Integer.parseInt(scanner.nextLine());
+
+            // Tự động tăng ID
+            int newId = 1;
+            if (!products.isEmpty()) {
+                newId = products.get(products.size() - 1).getId() + 1;
+            }
+
+            products.add(new Product(newId, name, price, discountPrice, isDiscount, categoryId));
+            System.out.println("Thêm thành công!");
+        } catch (Exception e) {
+            System.out.println("Lỗi nhập liệu! Vui lòng nhập đúng định dạng số.");
+        }
+    }
+
+    private static void updateProduct() {
+        try {
+            System.out.print("Nhập ID hoa quả cần cập nhật: ");
+            int id = Integer.parseInt(scanner.nextLine());
+            Product found = getProductById(id);
+            
+            if (found != null) {
+                System.out.print("Nhập giá gốc mới: ");
+                found.setPrice(Double.parseDouble(scanner.nextLine()));
+                System.out.print("Có giảm giá không (true/false): ");
+                found.setDiscount(Boolean.parseBoolean(scanner.nextLine()));
+                System.out.print("Nhập giá khuyến mãi mới: ");
+                found.setDiscountPrice(Double.parseDouble(scanner.nextLine()));
+                System.out.println("Cập nhật thành công!");
+            } else {
+                System.out.println("Không tìm thấy sản phẩm có ID = " + id);
+            }
+        } catch (Exception e) {
+            System.out.println("Lỗi nhập liệu!");
+        }
+    }
+
+
+    private static void displayAllOrders() {
+        System.out.println("\n--- TẤT CẢ ĐƠN HÀNG ---");
+        for (Order o : orders) {
+            System.out.print("Ma DH: " + o.getOrderId());
+            System.out.print("Khach: " + o.getBuyerUsername());
+            System.out.print("Ma SP: " + o.getProductId());
+            System.out.print("SL: " + o.getQuantity());
+            System.out.print("Don gia: " + o.getUnitPrice());
+            System.out.print("Tong: " + o.getTotalPrice());
+            System.out.print("Ngay: " + o.getOrderDate());
+        }
+    }
+
+    // ==========================================
+    // MENU KHÁCH MUA HÀNG
+    // ==========================================
+    private static void customerMenu(Account customer) {
+        while (true) {
+            System.out.println("\n================= MENU KHÁCH MUA HÀNG =================");
+            System.out.println("Xin chào: " + customer.getUsername() + "Role: Khách hàng" +customer.getRoleId());
+            System.out.println("-------------------------------------------------------");
+            System.out.println("1. Xem danh sách hoa quả đang bán");
+            System.out.println("2. Lọc hoa quả theo danh mục");
+            System.out.println("3. Mua hoa quả (Đặt hàng)");
+            System.out.println("4. Xem lịch sử đơn hàng của tôi");
+            System.out.println("0. Đăng xuất");
+            System.out.print("Lựa chọn của bạn: ");
+            
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    displayProductsForCustomer();
+                    break;
+                case "2":
+                    filterByCategory();
+                    break;
+                case "3":
+                    buyProduct(customer.getUsername());
+                    break;
+                case "4":
+                    viewOrderHistory(customer.getUsername());
+                    break;
+                case "0":
+                    return;
+                default:
+                    System.out.println("Lựa chọn không hợp lệ!");
+            }
+        }
+    }
+
+    private static void displayProductsForCustomer() {
+        System.out.println("\n--- HOA QUẢ ĐANG BÁN ---");
+        for (Product p : products) {
+            System.out.print("ID: " + p.getId() + " | " + p.getName());
+            if (p.isDiscount()) {
+                System.out.println(" | Giá KM: " + p.getDiscountPrice() + " VNĐ (Giá gốc: " + p.getPrice() + " VNĐ)");
+            } else {
+                System.out.println(" | Giá bán: " + p.getPrice() + " VNĐ");
+            }
+        }
+    }
+
+    private static void filterByCategory() {
+        try {
+            System.out.println("Các danh mục hiện có: ");
+            for (Category c : categories) {
+                System.out.println(c.getId() + ". " + c.getName());
+            }
+            System.out.print("Nhập ID danh mục muốn lọc: ");
+            int catId = Integer.parseInt(scanner.nextLine());
+            
+            System.out.println("--- Kết quả lọc ---");
+            for (Product p : products) {
+                if (p.getCategoryId() == catId) {
+                    System.out.println("ID: " + p.getId() + " | Tên: " + p.getName() + " | Giá gốc: " + p.getPrice());
+                }
+            }
+        } catch (Exception error) {
+            System.out.println("Lỗi nhập liệu!");
+        }
+    }
+
+    private static void buyProduct(String username) {
+        try {
+            System.out.print("Nhập ID hoa quả muốn mua: ");
+            int id = Integer.parseInt(scanner.nextLine());
+            Product found = getProductById(id);
+
+            if (found == null) {
+                System.out.println("Sản phẩm không tồn tại!");
+                return;
+            }
+
+            System.out.print("Nhập số lượng: ");
+            int quantity = Integer.parseInt(scanner.nextLine());
+            if (quantity <= 0) {
+                System.out.println("Số lượng phải lớn hơn 0!");
+                return;
+            }
+
+       
+            double unitPrice = found.isDiscount() ? found.getDiscountPrice() : found.getPrice();
+            double totalPrice = unitPrice * quantity;
+
+           
+            int newOrderId = 1;
+            if (!orders.isEmpty()) {
+                newOrderId = orders.get(orders.size() - 1).getOrderId() + 1;
+            }
+            
+            Order newOrder = new Order(newOrderId, username, found.getId(), quantity, unitPrice, totalPrice);
+            orders.add(newOrder);
+
+            System.out.println("--- ĐẶT HÀNG THÀNH CÔNG ---");
+            System.out.println("Bạn đã mua: " + quantity + " x " + found.getName());
+            System.out.println("Tổng thanh toán: " + totalPrice + " VNĐ");
+
+        } catch (Exception error) {
+            System.out.println("Lỗi nhập liệu! Vui lòng nhập số.");
+        }
+    }
+
+    private static void viewOrderHistory(String username) {
+        System.out.println("\n--- LỊCH SỬ ĐƠN HÀNG CỦA BẠN ---");
+        boolean hasOrder = false;
+        for (Order o : orders) {
+            if (o.getBuyerUsername().equals(username)) {
+                System.out.printf("Mã ĐH: %d | Mã SP: %d | SL: %d | Tổng tiền: %.1f | Ngày: %s\n",
+                        o.getOrderId(), o.getProductId(), o.getQuantity(), o.getTotalPrice(), o.getOrderDate());
+                hasOrder = true;
+            }
+        }
+        if (!hasOrder) {
+            System.out.println("Bạn chưa có đơn hàng nào.");
+        }
+    }
+
+
+    private static Product getProductById(int id) {
+        for (Product p : products) {
+            if (p.getId() == id) {
+                return p;
+            }
+        }
+        return null;
+    }
+}
